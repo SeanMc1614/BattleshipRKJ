@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FocusEvent } from 'react'
 import { Board } from './components/Board'
 import { FleetStatus } from './components/FleetStatus'
 import { Placement } from './components/Placement'
@@ -9,6 +9,9 @@ import './App.css'
 
 const AI_NAME = 'Captain Robot 🤖'
 const AI_DELAY_MS = 900
+const DEFAULT_NAMES = ['Player 1', 'Player 2']
+
+const selectAll = (event: FocusEvent<HTMLInputElement>) => event.target.select()
 
 function other(player: PlayerIndex): PlayerIndex {
   return player === 0 ? 1 : 0
@@ -17,12 +20,13 @@ function other(player: PlayerIndex): PlayerIndex {
 export default function App() {
   const [mode, setMode] = useState<GameMode>('ai')
   const [difficulty, setDifficulty] = useState<Difficulty>('easy')
-  const [names, setNames] = useState<[string, string]>(['Player 1', 'Player 2'])
+  const [names, setNames] = useState<[string, string]>(['', ''])
   const [fleets, setFleets] = useState<[Fleet, Fleet]>([emptyFleet(), emptyFleet()])
   const [phase, setPhase] = useState<Phase>({ name: 'menu' })
   const [message, setMessage] = useState('')
 
-  const playerName = (player: PlayerIndex) => (mode === 'ai' && player === 1 ? AI_NAME : names[player])
+  const playerName = (player: PlayerIndex) =>
+    mode === 'ai' && player === 1 ? AI_NAME : names[player].trim() || DEFAULT_NAMES[player]
 
   function startGame() {
     setFleets([emptyFleet(), emptyFleet()])
@@ -38,7 +42,7 @@ export default function App() {
   function handlePlacementDone(player: PlayerIndex, fleet: Fleet) {
     if (mode === 'ai') {
       setFleets([fleet, randomFleet()])
-      setMessage(`Your turn, ${names[0]}. Take a shot!`)
+      setMessage(`Your turn, ${playerName(0)}. Take a shot!`)
       setPhase({ name: 'battle', player: 0 })
       return
     }
@@ -48,7 +52,7 @@ export default function App() {
       return
     }
     setFleets(([first]) => [first, fleet])
-    setMessage(`${names[0]} shoots first!`)
+    setMessage(`${playerName(0)} shoots first!`)
     setPhase({ name: 'handoff', player: 0 })
   }
 
@@ -131,12 +135,24 @@ export default function App() {
 
           <div className="field">
             <label htmlFor="p1">Player 1 name</label>
-            <input id="p1" value={names[0]} onChange={(e) => setNames([e.target.value, names[1]])} />
+            <input
+              id="p1"
+              value={names[0]}
+              placeholder={DEFAULT_NAMES[0]}
+              onFocus={selectAll}
+              onChange={(e) => setNames([e.target.value, names[1]])}
+            />
           </div>
           {mode === 'versus' ? (
             <div className="field">
               <label htmlFor="p2">Player 2 name</label>
-              <input id="p2" value={names[1]} onChange={(e) => setNames([names[0], e.target.value])} />
+              <input
+                id="p2"
+                value={names[1]}
+                placeholder={DEFAULT_NAMES[1]}
+                onFocus={selectAll}
+                onChange={(e) => setNames([names[0], e.target.value])}
+              />
             </div>
           ) : null}
 
@@ -158,7 +174,7 @@ export default function App() {
         <Header />
         <Placement
           key={player}
-          playerName={names[player]}
+          playerName={playerName(player)}
           onDone={(fleet) => handlePlacementDone(player, fleet)}
         />
       </main>
@@ -172,7 +188,7 @@ export default function App() {
       <main className="app">
         <Header />
         <section className="screen handoff">
-          <h2>Pass the screen to {names[player]}</h2>
+          <h2>Pass the screen to {playerName(player)}</h2>
           {message ? <p className="message">{message}</p> : null}
           <p className="hint">No peeking! 🙈</p>
           <button
@@ -182,7 +198,7 @@ export default function App() {
               setPhase(needsPlacement ? { name: 'placement', player } : { name: 'battle', player })
             }
           >
-            I'm {names[player]} — ready
+            I'm {playerName(player)} — ready
           </button>
         </section>
       </main>
