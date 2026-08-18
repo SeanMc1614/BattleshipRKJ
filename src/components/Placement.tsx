@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Board } from './Board'
 import { canPlace, placeShip, randomFleet, shipCells } from '../game/board'
+import { ShipGlyph } from './ShipSprite'
 import { SHIP_KINDS, type Coord, type Fleet, type Orientation, type Ship } from '../game/types'
 
 interface PlacementProps {
@@ -52,7 +53,9 @@ export function Placement({ playerName, onDone }: PlacementProps) {
                 key={kind.id}
                 className={index < ships.length ? 'placed' : index === ships.length ? 'current' : ''}
               >
-                <span>{kind.emoji}</span> {kind.name} <small>({kind.size})</small>
+                <ShipGlyph id={kind.id} size={kind.size} />
+                <span className="ship-name">{kind.name}</span>
+                <span className="ship-tally">{kind.size}</span>
               </li>
             ))}
           </ol>
@@ -62,16 +65,16 @@ export function Placement({ playerName, onDone }: PlacementProps) {
               onClick={() => setOrientation(orientation === 'horizontal' ? 'vertical' : 'horizontal')}
               disabled={done}
             >
-              Rotate: {orientation === 'horizontal' ? 'across ↔' : 'down ↕'}
+              Rotate: {orientation === 'horizontal' ? 'across' : 'down'}
             </button>
             <button type="button" onClick={() => setShips(randomFleet().ships)}>
-              Place for me 🎲
+              Place for me
             </button>
             <button type="button" onClick={() => setShips([])} disabled={ships.length === 0}>
               Clear
             </button>
             <button type="button" className="primary" disabled={!done} onClick={() => onDone(fleet)}>
-              Set sail ⚓
+              Set sail
             </button>
           </div>
         </aside>

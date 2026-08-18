@@ -78,6 +78,21 @@ function shipArt(id: ShipId, length: number) {
   }
 }
 
+/** The board silhouette shrunk to an inline glyph, used in fleet and placement lists. */
+export function ShipGlyph({ id, size, sunk = false }: { id: ShipId; size: number; sunk?: boolean }) {
+  const length = size * CELL_UNITS
+  return (
+    <svg
+      className={`ship-glyph ${sunk ? 'sunk' : ''}`}
+      style={{ width: `calc(var(--glyph-unit) * ${size})` }}
+      viewBox={`0 0 ${length} ${CELL_UNITS}`}
+      aria-hidden="true"
+    >
+      {shipArt(id, length)}
+    </svg>
+  )
+}
+
 /**
  * Footprint of a ship in board coordinates, expressed with the `--cell` / `--gap`
  * custom properties so sprites track the responsive cell size.
