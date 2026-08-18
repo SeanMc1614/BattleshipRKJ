@@ -1,14 +1,16 @@
-import { useEffect, useState, type FocusEvent } from 'react'
+import { useEffect, useRef, useState, type FocusEvent } from 'react'
 import { Board } from './components/Board'
 import { FleetStatus } from './components/FleetStatus'
 import { Placement } from './components/Placement'
 import { chooseAiShot } from './game/ai'
 import { coordLabel, emptyFleet, fireAt, randomFleet } from './game/board'
 import type { Coord, Difficulty, Fleet, GameMode, Phase, PlayerIndex } from './game/types'
+import { WHISTLE_MS, isSoundOn, playExplosion, playSplash, playWhistle, say, setSoundOn } from './sound'
 import './App.css'
 
 const AI_NAME = 'Captain Robot 🤖'
 const AI_DELAY_MS = 900
+const VOICE_DELAY_MS = 450
 const DEFAULT_NAMES = ['Player 1', 'Player 2']
 
 const selectAll = (event: FocusEvent<HTMLInputElement>) => event.target.select()
@@ -24,17 +26,41 @@ export default function App() {
   const [fleets, setFleets] = useState<[Fleet, Fleet]>([emptyFleet(), emptyFleet()])
   const [phase, setPhase] = useState<Phase>({ name: 'menu' })
   const [message, setMessage] = useState('')
+  const [incoming, setIncoming] = useState(false)
+  const [soundOn, setSound] = useState(isSoundOn)
+  const timers = useRef<number[]>([])
+
+  const later = (fn: () => void, delay: number) => {
+    timers.current.push(window.setTimeout(fn, delay))
+  }
+
+  const clearTimers = () => {
+    timers.current.forEach(window.clearTimeout)
+    timers.current = []
+  }
+
+  useEffect(() => clearTimers, [])
+
+  function toggleSound() {
+    const next = !soundOn
+    setSoundOn(next)
+    setSound(next)
+  }
 
   const playerName = (player: PlayerIndex) =>
     mode === 'ai' && player === 1 ? AI_NAME : names[player].trim() || DEFAULT_NAMES[player]
 
   function startGame() {
+    clearTimers()
+    setIncoming(false)
     setFleets([emptyFleet(), emptyFleet()])
     setMessage('')
     setPhase({ name: 'placement', player: 0 })
   }
 
   function backToMenu() {
+    clearTimers()
+    setIncoming(false)
     setPhase({ name: 'menu' })
     setMessage('')
   }
@@ -62,12 +88,31 @@ export default function App() {
     return `${shooter} missed at ${coordLabel(cell)}. 🌊`
   }
 
+  /** A shot takes off first: whistle in the air, then the impact is revealed. */
   function fire(shooter: PlayerIndex, cell: Coord) {
+    if (incoming) return
+    setIncoming(true)
+    setMessage(`Shot away at ${coordLabel(cell)}… 🚀`)
+    playWhistle()
+    later(() => resolveShot(shooter, cell), WHISTLE_MS)
+  }
+
+  function resolveShot(shooter: PlayerIndex, cell: Coord) {
     const targetIndex = other(shooter)
     const outcome = fireAt(fleets[targetIndex], cell)
     const nextFleets: [Fleet, Fleet] = shooter === 0 ? [fleets[0], outcome.fleet] : [outcome.fleet, fleets[1]]
     setFleets(nextFleets)
     setMessage(describe(playerName(shooter), cell, outcome.result, outcome.ship?.name))
+    setIncoming(false)
+
+    if (outcome.result === 'miss') {
+      playSplash()
+    } else {
+      playExplosion()
+      const shipName = outcome.ship?.name ?? 'ship'
+      const line = outcome.result === 'sunk' ? `${shipName} sunk!` : `Hit! ${shipName}`
+      later(() => say(line), VOICE_DELAY_MS)
+    }
 
     if (outcome.allSunk) {
       setPhase({ name: 'gameover', winner: shooter })
@@ -82,16 +127,16 @@ export default function App() {
 
   const aiTurn = mode === 'ai' && phase.name === 'battle' && phase.player === 1
   useEffect(() => {
-    if (!aiTurn) return
+    if (!aiTurn || incoming) return
     const timer = setTimeout(() => fire(1, chooseAiShot(fleets[0], difficulty)), AI_DELAY_MS)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiTurn, fleets, difficulty])
+  }, [aiTurn, incoming, fleets, difficulty])
 
   if (phase.name === 'menu') {
     return (
       <main className="app">
-        <Header />
+        <Header soundOn={soundOn} onToggleSound={toggleSound} />
         <section className="screen menu">
           <h2>Choose your game</h2>
           <div className="mode-cards">
@@ -160,7 +205,8 @@ export default function App() {
             Start game
           </button>
           <p className="rules">
-            Sink all five of your opponent's ships to win. Each turn you fire one shot: ✖ is a hit, • is a splash.
+            Sink all five of your opponent's ships to win. Each turn you fire one shot: a red peg is a hit, a
+            white peg is a splash.
           </p>
         </section>
       </main>
@@ -171,7 +217,7 @@ export default function App() {
     const player = phase.player
     return (
       <main className="app">
-        <Header />
+        <Header soundOn={soundOn} onToggleSound={toggleSound} />
         <Placement
           key={player}
           playerName={playerName(player)}
@@ -186,7 +232,7 @@ export default function App() {
     const needsPlacement = fleets[player].ships.length === 0
     return (
       <main className="app">
-        <Header />
+        <Header soundOn={soundOn} onToggleSound={toggleSound} />
         <section className="screen handoff">
           <h2>Pass the screen to {playerName(player)}</h2>
           {message ? <p className="message">{message}</p> : null}
@@ -213,7 +259,7 @@ export default function App() {
 
   return (
     <main className="app">
-      <Header />
+      <Header soundOn={soundOn} onToggleSound={toggleSound} />
       <section className="screen battle">
         {gameOver ? (
           <div className="banner win">
@@ -229,7 +275,13 @@ export default function App() {
           </div>
         ) : (
           <div className="banner">
-            <h2>{aiTurn ? `${AI_NAME} is taking aim…` : `${playerName(viewer)}: fire away!`}</h2>
+            <h2>
+              {incoming
+                ? 'Shot in the air… 🚀'
+                : aiTurn
+                  ? `${AI_NAME} is taking aim…`
+                  : `${playerName(viewer)}: fire away!`}
+            </h2>
             <p className="message">{message}</p>
           </div>
         )}
@@ -239,7 +291,7 @@ export default function App() {
             fleet={fleets[opponent]}
             revealShips={gameOver}
             label={`${playerName(opponent)}'s waters — shoot here`}
-            disabled={gameOver || aiTurn}
+            disabled={gameOver || aiTurn || incoming}
             onCellClick={(cell) => fire(viewer, cell)}
           />
           <Board fleet={fleets[viewer]} revealShips label={`${playerName(viewer)}'s waters`} disabled />
@@ -260,10 +312,19 @@ export default function App() {
   )
 }
 
-function Header() {
+function Header({ soundOn, onToggleSound }: { soundOn: boolean; onToggleSound: () => void }) {
   return (
     <header className="header">
       <h1>⚓ Battleship</h1>
+      <button
+        type="button"
+        className="sound-toggle"
+        aria-label={soundOn ? 'Turn sound off' : 'Turn sound on'}
+        aria-pressed={soundOn}
+        onClick={onToggleSound}
+      >
+        {soundOn ? '🔊' : '🔇'}
+      </button>
     </header>
   )
 }
