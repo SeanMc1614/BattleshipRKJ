@@ -133,6 +133,10 @@ button.big {
   text-align: center;
 }
 
+.field input::placeholder {
+  color: #ffffff88;
+}
+
 .rules {
   max-width: 520px;
   text-align: center;
