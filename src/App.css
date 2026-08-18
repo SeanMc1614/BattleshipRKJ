@@ -1,0 +1,325 @@
+:root {
+  --ocean: #1b6ca8;
+  --ocean-dark: #0d3b60;
+  --ship: #4a5568;
+  --hit: #e64c3c;
+  --miss: #cfe8ff;
+  --sunk: #7b1f14;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  background: linear-gradient(180deg, #0d3b60, #14507f 60%, #1b6ca8);
+  color: #f4faff;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 16px 48px;
+}
+
+.header h1 {
+  text-align: center;
+  font-size: clamp(2rem, 6vw, 3rem);
+  margin: 8px 0 16px;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+h2 {
+  margin: 0;
+  font-size: clamp(1.3rem, 4vw, 2rem);
+  text-align: center;
+}
+
+button {
+  font: inherit;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 18px;
+  background: #ffffff22;
+  color: #f4faff;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  background: #ffffff33;
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+button.primary {
+  background: #ffc857;
+  color: #23303f;
+}
+
+button.primary:hover:not(:disabled) {
+  background: #ffd77a;
+}
+
+button.big {
+  font-size: 1.25rem;
+  padding: 14px 28px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* Menu */
+.mode-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+}
+
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 240px;
+  padding: 20px;
+  border: 3px solid transparent;
+  background: #ffffff1a;
+}
+
+.mode-card.selected {
+  border-color: #ffc857;
+  background: #ffffff2e;
+}
+
+.mode-emoji {
+  font-size: 2.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.field input {
+  font: inherit;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 2px solid #ffffff44;
+  background: #00000022;
+  color: inherit;
+  text-align: center;
+}
+
+.rules {
+  max-width: 520px;
+  text-align: center;
+  opacity: 0.85;
+}
+
+/* Boards */
+.boards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+}
+
+.board-label {
+  text-align: center;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--ocean-dark);
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.grid-row {
+  display: flex;
+  gap: 2px;
+}
+
+.cell {
+  width: clamp(22px, 3.4vw, 34px);
+  height: clamp(22px, 3.4vw, 34px);
+  padding: 0;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cell.header {
+  background: transparent;
+  font-size: 0.75rem;
+  opacity: 0.8;
+  cursor: default;
+}
+
+.cell.water {
+  background: var(--ocean);
+}
+
+.cell.water:hover:not(:disabled) {
+  background: #2b8fd6;
+  transform: none;
+}
+
+.cell.ship {
+  background: var(--ship);
+}
+
+.cell.miss {
+  background: var(--miss);
+  color: #23303f;
+  opacity: 1;
+}
+
+.cell.hit {
+  background: var(--hit);
+  color: #fff;
+  opacity: 1;
+}
+
+.cell.sunk {
+  background: var(--sunk);
+  color: #fff;
+  opacity: 1;
+}
+
+.cell.preview {
+  background: #7ed957;
+}
+
+.cell.preview-bad {
+  background: #d95757;
+}
+
+/* Placement */
+.placement-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.panel {
+  background: #ffffff14;
+  border-radius: 14px;
+  padding: 16px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hint {
+  margin: 0;
+}
+
+.ship-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ship-list .placed {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.ship-list .current {
+  font-weight: 800;
+  color: #ffc857;
+}
+
+/* Battle */
+.banner {
+  text-align: center;
+}
+
+.banner.win h2 {
+  color: #ffc857;
+}
+
+.message {
+  min-height: 1.5em;
+  margin: 6px 0 0;
+  font-size: 1.05rem;
+}
+
+.statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+}
+
+.fleet-status {
+  background: #ffffff14;
+  border-radius: 14px;
+  padding: 12px 18px;
+  min-width: 220px;
+}
+
+.fleet-status h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.fleet-status ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fleet-status .sunk-ship {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.quit {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.handoff {
+  gap: 20px;
+  padding: 32px 0;
+}
