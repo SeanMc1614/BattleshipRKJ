@@ -18,7 +18,7 @@ import type { Coord, Difficulty, Fleet, GameMode, Phase, PlayerIndex, ShotResult
 import { WHISTLE_MS, isSoundOn, playExplosion, playSplash, playWhistle, say, setSoundOn } from './sound'
 import './App.css'
 
-const AI_NAME = 'Captain Robot'
+const AI_NAME = 'Sardaukar'
 const AI_DELAY_MS = 900
 const VOICE_DELAY_MS = 450
 const DEFAULT_NAMES = ['Player 1', 'Player 2']
@@ -31,7 +31,7 @@ function other(player: PlayerIndex): PlayerIndex {
 
 export default function App() {
   const [mode, setMode] = useState<GameMode>('ai')
-  const [difficulty, setDifficulty] = useState<Difficulty>('easy')
+  const [difficulty, setDifficulty] = useState<Difficulty>('normal')
   const [names, setNames] = useState<[string, string]>(['', ''])
   const [fleets, setFleets] = useState<[Fleet, Fleet]>([newFleet(), newFleet()])
   const [phase, setPhase] = useState<Phase>({ name: 'menu' })
