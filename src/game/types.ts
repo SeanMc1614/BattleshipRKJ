@@ -8,15 +8,14 @@ export interface ShipKind {
   id: ShipId
   name: string
   size: number
-  emoji: string
 }
 
 export const SHIP_KINDS: ShipKind[] = [
-  { id: 'carrier', name: 'Carrier', size: 5, emoji: '🛳️' },
-  { id: 'battleship', name: 'Battleship', size: 4, emoji: '🚢' },
-  { id: 'cruiser', name: 'Cruiser', size: 3, emoji: '⛴️' },
-  { id: 'submarine', name: 'Submarine', size: 3, emoji: '🤿' },
-  { id: 'destroyer', name: 'Destroyer', size: 2, emoji: '🛥️' },
+  { id: 'carrier', name: 'Carrier', size: 5 },
+  { id: 'battleship', name: 'Battleship', size: 4 },
+  { id: 'cruiser', name: 'Cruiser', size: 3 },
+  { id: 'submarine', name: 'Submarine', size: 3 },
+  { id: 'destroyer', name: 'Destroyer', size: 2 },
 ]
 
 export interface Coord {

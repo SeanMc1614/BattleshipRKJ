@@ -1,14 +1,24 @@
 import { useEffect, useRef, useState, type FocusEvent } from 'react'
 import { Board } from './components/Board'
 import { FleetStatus } from './components/FleetStatus'
+import {
+  ClassifiedIcon,
+  CrestIcon,
+  DuelIcon,
+  MissileIcon,
+  PegIcon,
+  RadarIcon,
+  SoundIcon,
+  TrophyIcon,
+} from './components/Icons'
 import { Placement } from './components/Placement'
 import { chooseAiShot } from './game/ai'
 import { coordLabel, emptyFleet, fireAt, randomFleet } from './game/board'
-import type { Coord, Difficulty, Fleet, GameMode, Phase, PlayerIndex } from './game/types'
+import type { Coord, Difficulty, Fleet, GameMode, Phase, PlayerIndex, ShotResult } from './game/types'
 import { WHISTLE_MS, isSoundOn, playExplosion, playSplash, playWhistle, say, setSoundOn } from './sound'
 import './App.css'
 
-const AI_NAME = 'Captain Robot 🤖'
+const AI_NAME = 'Captain Robot'
 const AI_DELAY_MS = 900
 const VOICE_DELAY_MS = 450
 const DEFAULT_NAMES = ['Player 1', 'Player 2']
@@ -27,6 +37,7 @@ export default function App() {
   const [phase, setPhase] = useState<Phase>({ name: 'menu' })
   const [message, setMessage] = useState('')
   const [incoming, setIncoming] = useState(false)
+  const [lastResult, setLastResult] = useState<ShotResult | null>(null)
   const [soundOn, setSound] = useState(isSoundOn)
   const timers = useRef<number[]>([])
 
@@ -55,6 +66,7 @@ export default function App() {
     setIncoming(false)
     setFleets([emptyFleet(), emptyFleet()])
     setMessage('')
+    setLastResult(null)
     setPhase({ name: 'placement', player: 0 })
   }
 
@@ -63,6 +75,7 @@ export default function App() {
     setIncoming(false)
     setPhase({ name: 'menu' })
     setMessage('')
+    setLastResult(null)
   }
 
   function handlePlacementDone(player: PlayerIndex, fleet: Fleet) {
@@ -83,16 +96,17 @@ export default function App() {
   }
 
   function describe(shooter: string, cell: Coord, result: string, shipName?: string) {
-    if (result === 'sunk') return `${shooter} sank the ${shipName} at ${coordLabel(cell)}! 🔥`
-    if (result === 'hit') return `${shooter} hit a ship at ${coordLabel(cell)}! 💥`
-    return `${shooter} missed at ${coordLabel(cell)}. 🌊`
+    if (result === 'sunk') return `${shooter} sank the ${shipName} at ${coordLabel(cell)}!`
+    if (result === 'hit') return `${shooter} hit a ship at ${coordLabel(cell)}!`
+    return `${shooter} missed at ${coordLabel(cell)}.`
   }
 
   /** A shot takes off first: whistle in the air, then the impact is revealed. */
   function fire(shooter: PlayerIndex, cell: Coord) {
     if (incoming) return
     setIncoming(true)
-    setMessage(`Shot away at ${coordLabel(cell)}… 🚀`)
+    setLastResult(null)
+    setMessage(`Shot away at ${coordLabel(cell)}…`)
     playWhistle()
     later(() => resolveShot(shooter, cell), WHISTLE_MS)
   }
@@ -103,6 +117,7 @@ export default function App() {
     const nextFleets: [Fleet, Fleet] = shooter === 0 ? [fleets[0], outcome.fleet] : [outcome.fleet, fleets[1]]
     setFleets(nextFleets)
     setMessage(describe(playerName(shooter), cell, outcome.result, outcome.ship?.name))
+    setLastResult(outcome.result)
     setIncoming(false)
 
     if (outcome.result === 'miss') {
@@ -145,7 +160,7 @@ export default function App() {
               className={`mode-card ${mode === 'ai' ? 'selected' : ''}`}
               onClick={() => setMode('ai')}
             >
-              <span className="mode-emoji">🤖</span>
+              <RadarIcon className="mode-icon" />
               <strong>Play the computer</strong>
               <small>One player vs {AI_NAME}</small>
             </button>
@@ -154,7 +169,7 @@ export default function App() {
               className={`mode-card ${mode === 'versus' ? 'selected' : ''}`}
               onClick={() => setMode('versus')}
             >
-              <span className="mode-emoji">👨‍👧</span>
+              <DuelIcon className="mode-icon" />
               <strong>Head to head</strong>
               <small>Two players, pass the screen</small>
             </button>
@@ -171,7 +186,7 @@ export default function App() {
                     className={difficulty === level ? 'primary' : ''}
                     onClick={() => setDifficulty(level)}
                   >
-                    {level === 'easy' ? 'Easy 🐣' : 'Normal 🦈'}
+                    {level === 'easy' ? 'Easy' : 'Normal'}
                   </button>
                 ))}
               </div>
@@ -236,7 +251,9 @@ export default function App() {
         <section className="screen handoff">
           <h2>Pass the screen to {playerName(player)}</h2>
           {message ? <p className="message">{message}</p> : null}
-          <p className="hint">No peeking! 🙈</p>
+          <p className="hint">
+            <ClassifiedIcon /> Classified — no peeking!
+          </p>
           <button
             type="button"
             className="primary big"
@@ -263,7 +280,9 @@ export default function App() {
       <section className="screen battle">
         {gameOver ? (
           <div className="banner win">
-            <h2>{playerName(activePlayer)} wins! 🎉</h2>
+            <h2>
+              <TrophyIcon /> {playerName(activePlayer)} wins!
+            </h2>
             <div className="controls">
               <button type="button" className="primary" onClick={startGame}>
                 Play again
@@ -276,13 +295,20 @@ export default function App() {
         ) : (
           <div className="banner">
             <h2>
-              {incoming
-                ? 'Shot in the air… 🚀'
-                : aiTurn
-                  ? `${AI_NAME} is taking aim…`
-                  : `${playerName(viewer)}: fire away!`}
+              {incoming ? (
+                <>
+                  <MissileIcon /> Shot in the air…
+                </>
+              ) : aiTurn ? (
+                `${AI_NAME} is taking aim…`
+              ) : (
+                `${playerName(viewer)}: fire away!`
+              )}
             </h2>
-            <p className="message">{message}</p>
+            <p className="message">
+              {lastResult ? <PegIcon result={lastResult} /> : null}
+              {message}
+            </p>
           </div>
         )}
 
@@ -315,15 +341,19 @@ export default function App() {
 function Header({ soundOn, onToggleSound }: { soundOn: boolean; onToggleSound: () => void }) {
   return (
     <header className="header">
-      <h1>⚓ Battleship</h1>
+      <h1>
+        <CrestIcon className="crest" />
+        <span className="wordmark">Battleship</span>
+      </h1>
       <button
         type="button"
-        className="sound-toggle"
+        className={`sound-toggle ${soundOn ? '' : 'muted'}`}
         aria-label={soundOn ? 'Turn sound off' : 'Turn sound on'}
         aria-pressed={soundOn}
         onClick={onToggleSound}
       >
-        {soundOn ? '🔊' : '🔇'}
+        <SoundIcon muted={!soundOn} />
+        <span>{soundOn ? 'Sound on' : 'Muted'}</span>
       </button>
     </header>
   )
