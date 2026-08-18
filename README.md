@@ -4,7 +4,7 @@ A kid-friendly browser version of classic Battleship, built with React, TypeScri
 
 ## Modes
 
-- **Play the computer** — one player against the AI, in *Easy* (fires at random) or *Normal* (hunts in a checkerboard pattern and finishes off ships it has wounded).
+- **Play the computer** — one player against Sardaukar, in *Normal* (the default: hunts in a checkerboard pattern and finishes off ships it has wounded) or *Easy* (fires at random).
 - **Head to head** — two players on the same device. A "pass the screen" screen hides each player's board between turns.
 
 ## Rules as implemented
