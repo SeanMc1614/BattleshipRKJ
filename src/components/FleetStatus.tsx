@@ -1,6 +1,6 @@
 import { isSunk } from '../game/board'
 import { type Fleet } from '../game/types'
-import { ShipGlyph } from './ShipSprite'
+import { ShipRow } from './ShipRow'
 
 interface FleetStatusProps {
   title: string
@@ -15,11 +15,15 @@ export function FleetStatus({ title, fleet }: FleetStatusProps) {
         {fleet.ships.map((ship) => {
           const sunk = isSunk(ship)
           return (
-            <li key={ship.id} className={sunk ? 'sunk-ship' : ''}>
-              <ShipGlyph id={ship.id} size={ship.cells.length} sunk={sunk} />
-              <span className="ship-name">{ship.name}</span>
-              <span className="ship-tally">{sunk ? 'sunk' : `${ship.hits}/${ship.cells.length}`}</span>
-            </li>
+            <ShipRow
+              key={ship.id}
+              id={ship.id}
+              size={ship.cells.length}
+              name={ship.name}
+              tally={sunk ? 'sunk' : `${ship.hits}/${ship.cells.length}`}
+              sunk={sunk}
+              className={sunk ? 'sunk-ship' : ''}
+            />
           )
         })}
       </ul>

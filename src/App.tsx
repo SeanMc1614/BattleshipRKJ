@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FocusEvent } from 'react'
+import { useEffect, useRef, useState, type FocusEvent, type ReactNode } from 'react'
 import { Board } from './components/Board'
 import { FleetStatus } from './components/FleetStatus'
 import {
@@ -13,7 +13,7 @@ import {
 } from './components/Icons'
 import { Placement } from './components/Placement'
 import { chooseAiShot } from './game/ai'
-import { coordLabel, emptyFleet, fireAt, randomFleet } from './game/board'
+import { coordLabel, fireAt, newFleet, randomFleet } from './game/board'
 import type { Coord, Difficulty, Fleet, GameMode, Phase, PlayerIndex, ShotResult } from './game/types'
 import { WHISTLE_MS, isSoundOn, playExplosion, playSplash, playWhistle, say, setSoundOn } from './sound'
 import './App.css'
@@ -33,7 +33,7 @@ export default function App() {
   const [mode, setMode] = useState<GameMode>('ai')
   const [difficulty, setDifficulty] = useState<Difficulty>('easy')
   const [names, setNames] = useState<[string, string]>(['', ''])
-  const [fleets, setFleets] = useState<[Fleet, Fleet]>([emptyFleet(), emptyFleet()])
+  const [fleets, setFleets] = useState<[Fleet, Fleet]>([newFleet(), newFleet()])
   const [phase, setPhase] = useState<Phase>({ name: 'menu' })
   const [message, setMessage] = useState('')
   const [incoming, setIncoming] = useState(false)
@@ -61,22 +61,32 @@ export default function App() {
   const playerName = (player: PlayerIndex) =>
     mode === 'ai' && player === 1 ? AI_NAME : names[player].trim() || DEFAULT_NAMES[player]
 
-  function startGame() {
+  /** Drops any shot in flight and clears the feedback line. */
+  function resetShots() {
     clearTimers()
     setIncoming(false)
-    setFleets([emptyFleet(), emptyFleet()])
     setMessage('')
     setLastResult(null)
+  }
+
+  function startGame() {
+    resetShots()
+    setFleets([newFleet(), newFleet()])
     setPhase({ name: 'placement', player: 0 })
   }
 
   function backToMenu() {
-    clearTimers()
-    setIncoming(false)
+    resetShots()
     setPhase({ name: 'menu' })
-    setMessage('')
-    setLastResult(null)
   }
+
+  /** Every screen sits inside the same console shell. */
+  const shell = (content: ReactNode) => (
+    <main className="app">
+      <Header soundOn={soundOn} onToggleSound={toggleSound} />
+      {content}
+    </main>
+  )
 
   function handlePlacementDone(player: PlayerIndex, fleet: Fleet) {
     if (mode === 'ai') {
@@ -86,7 +96,7 @@ export default function App() {
       return
     }
     if (player === 0) {
-      setFleets([fleet, emptyFleet()])
+      setFleets([fleet, newFleet()])
       setPhase({ name: 'handoff', player: 1 })
       return
     }
@@ -149,122 +159,113 @@ export default function App() {
   }, [aiTurn, incoming, fleets, difficulty])
 
   if (phase.name === 'menu') {
-    return (
-      <main className="app">
-        <Header soundOn={soundOn} onToggleSound={toggleSound} />
-        <section className="screen menu">
-          <h2>Choose your game</h2>
-          <div className="mode-cards">
-            <button
-              type="button"
-              className={`mode-card ${mode === 'ai' ? 'selected' : ''}`}
-              onClick={() => setMode('ai')}
-            >
-              <RadarIcon className="mode-icon" />
-              <strong>Play the computer</strong>
-              <small>One player vs {AI_NAME}</small>
-            </button>
-            <button
-              type="button"
-              className={`mode-card ${mode === 'versus' ? 'selected' : ''}`}
-              onClick={() => setMode('versus')}
-            >
-              <DuelIcon className="mode-icon" />
-              <strong>Head to head</strong>
-              <small>Two players, pass the screen</small>
-            </button>
-          </div>
+    return shell(
+      <section className="screen menu">
+        <h2>Choose your game</h2>
+        <div className="mode-cards">
+          <button
+            type="button"
+            className={`mode-card ${mode === 'ai' ? 'selected' : ''}`}
+            onClick={() => setMode('ai')}
+          >
+            <RadarIcon className="mode-icon" />
+            <strong>Play the computer</strong>
+            <small>One player vs {AI_NAME}</small>
+          </button>
+          <button
+            type="button"
+            className={`mode-card ${mode === 'versus' ? 'selected' : ''}`}
+            onClick={() => setMode('versus')}
+          >
+            <DuelIcon className="mode-icon" />
+            <strong>Head to head</strong>
+            <small>Two players, pass the screen</small>
+          </button>
+        </div>
 
-          {mode === 'ai' ? (
-            <div className="field">
-              <span>How tough is the computer?</span>
-              <div className="controls">
-                {(['easy', 'normal'] as Difficulty[]).map((level) => (
-                  <button
-                    key={level}
-                    type="button"
-                    className={difficulty === level ? 'primary' : ''}
-                    onClick={() => setDifficulty(level)}
-                  >
-                    {level === 'easy' ? 'Easy' : 'Normal'}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
+        {mode === 'ai' ? (
           <div className="field">
-            <label htmlFor="p1">Player 1 name</label>
+            <span>How tough is the computer?</span>
+            <div className="controls">
+              {(['easy', 'normal'] as Difficulty[]).map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  className={difficulty === level ? 'primary' : ''}
+                  onClick={() => setDifficulty(level)}
+                >
+                  {level === 'easy' ? 'Easy' : 'Normal'}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="field">
+          <label htmlFor="p1">Player 1 name</label>
+          <input
+            id="p1"
+            value={names[0]}
+            placeholder={DEFAULT_NAMES[0]}
+            onFocus={selectAll}
+            onChange={(e) => setNames([e.target.value, names[1]])}
+          />
+        </div>
+        {mode === 'versus' ? (
+          <div className="field">
+            <label htmlFor="p2">Player 2 name</label>
             <input
-              id="p1"
-              value={names[0]}
-              placeholder={DEFAULT_NAMES[0]}
+              id="p2"
+              value={names[1]}
+              placeholder={DEFAULT_NAMES[1]}
               onFocus={selectAll}
-              onChange={(e) => setNames([e.target.value, names[1]])}
+              onChange={(e) => setNames([names[0], e.target.value])}
             />
           </div>
-          {mode === 'versus' ? (
-            <div className="field">
-              <label htmlFor="p2">Player 2 name</label>
-              <input
-                id="p2"
-                value={names[1]}
-                placeholder={DEFAULT_NAMES[1]}
-                onFocus={selectAll}
-                onChange={(e) => setNames([names[0], e.target.value])}
-              />
-            </div>
-          ) : null}
+        ) : null}
 
-          <button type="button" className="primary big" onClick={startGame}>
-            Start game
-          </button>
-          <p className="rules">
-            Sink all five of your opponent's ships to win. Each turn you fire one shot: a red peg is a hit, a
-            white peg is a splash.
-          </p>
-        </section>
-      </main>
+        <button type="button" className="primary big" onClick={startGame}>
+          Start game
+        </button>
+        <p className="rules">
+          Sink all five of your opponent's ships to win. Each turn you fire one shot: a red peg is a hit, a
+          white peg is a splash.
+        </p>
+      </section>,
     )
   }
 
   if (phase.name === 'placement') {
     const player = phase.player
-    return (
-      <main className="app">
-        <Header soundOn={soundOn} onToggleSound={toggleSound} />
-        <Placement
-          key={player}
-          playerName={playerName(player)}
-          onDone={(fleet) => handlePlacementDone(player, fleet)}
-        />
-      </main>
+    return shell(
+      <Placement
+        key={player}
+        playerName={playerName(player)}
+        onDone={(fleet) => handlePlacementDone(player, fleet)}
+      />,
     )
   }
 
   if (phase.name === 'handoff') {
     const player = phase.player
     const needsPlacement = fleets[player].ships.length === 0
-    return (
-      <main className="app">
-        <Header soundOn={soundOn} onToggleSound={toggleSound} />
-        <section className="screen handoff">
-          <h2>Pass the screen to {playerName(player)}</h2>
-          {message ? <p className="message">{message}</p> : null}
-          <p className="hint">
-            <ClassifiedIcon /> Classified — no peeking!
-          </p>
-          <button
-            type="button"
-            className="primary big"
-            onClick={() =>
-              setPhase(needsPlacement ? { name: 'placement', player } : { name: 'battle', player })
-            }
-          >
-            I'm {playerName(player)} — ready
-          </button>
-        </section>
-      </main>
+    return shell(
+      <section className="screen handoff">
+        <h2>Pass the screen to {playerName(player)}</h2>
+        {message ? <p className="message">{message}</p> : null}
+        <p className="hint">
+          <ClassifiedIcon /> Classified — no peeking!
+        </p>
+        <button
+          type="button"
+          className="primary big"
+          onClick={() =>
+            setPhase(needsPlacement ? { name: 'placement', player } : { name: 'battle', player })
+          }
+        >
+          I'm {playerName(player)} — ready
+        </button>
+      </section>,
     )
   }
 
@@ -274,67 +275,64 @@ export default function App() {
   const opponent = other(viewer)
   const gameOver = phase.name === 'gameover'
 
-  return (
-    <main className="app">
-      <Header soundOn={soundOn} onToggleSound={toggleSound} />
-      <section className="screen battle">
-        {gameOver ? (
-          <div className="banner win">
-            <h2>
-              <TrophyIcon /> {playerName(activePlayer)} wins!
-            </h2>
-            <div className="controls">
-              <button type="button" className="primary" onClick={startGame}>
-                Play again
-              </button>
-              <button type="button" onClick={backToMenu}>
-                Main menu
-              </button>
-            </div>
+  return shell(
+    <section className="screen battle">
+      {gameOver ? (
+        <div className="banner win">
+          <h2>
+            <TrophyIcon /> {playerName(activePlayer)} wins!
+          </h2>
+          <div className="controls">
+            <button type="button" className="primary" onClick={startGame}>
+              Play again
+            </button>
+            <button type="button" onClick={backToMenu}>
+              Main menu
+            </button>
           </div>
-        ) : (
-          <div className="banner">
-            <h2>
-              {incoming ? (
-                <>
-                  <MissileIcon /> Shot in the air…
-                </>
-              ) : aiTurn ? (
-                `${AI_NAME} is taking aim…`
-              ) : (
-                `${playerName(viewer)}: fire away!`
-              )}
-            </h2>
-            <p className="message">
-              {lastResult ? <PegIcon result={lastResult} /> : null}
-              {message}
-            </p>
-          </div>
-        )}
-
-        <div className="boards">
-          <Board
-            fleet={fleets[opponent]}
-            revealShips={gameOver}
-            label={`${playerName(opponent)}'s waters — shoot here`}
-            disabled={gameOver || aiTurn || incoming}
-            onCellClick={(cell) => fire(viewer, cell)}
-          />
-          <Board fleet={fleets[viewer]} revealShips label={`${playerName(viewer)}'s waters`} disabled />
         </div>
-
-        <div className="statuses">
-          <FleetStatus title={`${playerName(opponent)}'s fleet`} fleet={fleets[opponent]} />
-          <FleetStatus title={`${playerName(viewer)}'s fleet`} fleet={fleets[viewer]} />
+      ) : (
+        <div className="banner">
+          <h2>
+            {incoming ? (
+              <>
+                <MissileIcon /> Shot in the air…
+              </>
+            ) : aiTurn ? (
+              `${AI_NAME} is taking aim…`
+            ) : (
+              `${playerName(viewer)}: fire away!`
+            )}
+          </h2>
+          <p className="message">
+            {lastResult ? <PegIcon result={lastResult} /> : null}
+            {message}
+          </p>
         </div>
+      )}
 
-        {!gameOver ? (
-          <button type="button" className="quit" onClick={backToMenu}>
-            Quit to menu
-          </button>
-        ) : null}
-      </section>
-    </main>
+      <div className="boards">
+        <Board
+          fleet={fleets[opponent]}
+          revealShips={gameOver}
+          label={`${playerName(opponent)}'s waters — shoot here`}
+          disabled={gameOver || aiTurn || incoming}
+          onCellClick={(cell) => fire(viewer, cell)}
+        />
+        <Board fleet={fleets[viewer]} revealShips label={`${playerName(viewer)}'s waters`} disabled />
+      </div>
+
+      <div className="statuses">
+        <FleetStatus title={`${playerName(opponent)}'s fleet`} fleet={fleets[opponent]} />
+        <FleetStatus title={`${playerName(viewer)}'s fleet`} fleet={fleets[viewer]} />
+      </div>
+
+      {!gameOver ? (
+        <button type="button" className="quit" onClick={backToMenu}>
+          Quit to menu
+        </button>
+      ) : null}
+    </section>,
   )
 }
 

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import type { Coord, ShipId } from '../game/types'
 
 const CELL_UNITS = 100
@@ -78,18 +79,35 @@ function shipArt(id: ShipId, length: number) {
   }
 }
 
-/** The board silhouette shrunk to an inline glyph, used in fleet and placement lists. */
-export function ShipGlyph({ id, size, sunk = false }: { id: ShipId; size: number; sunk?: boolean }) {
+/** The silhouette itself, sized in cell units so callers only choose CSS dimensions. */
+function ShipSvg({
+  id,
+  size,
+  className,
+  style,
+}: {
+  id: ShipId
+  size: number
+  className: string
+  style: CSSProperties
+}) {
   const length = size * CELL_UNITS
   return (
-    <svg
-      className={`ship-glyph ${sunk ? 'sunk' : ''}`}
-      style={{ width: `calc(var(--glyph-unit) * ${size})` }}
-      viewBox={`0 0 ${length} ${CELL_UNITS}`}
-      aria-hidden="true"
-    >
+    <svg className={className} style={style} viewBox={`0 0 ${length} ${CELL_UNITS}`} aria-hidden="true">
       {shipArt(id, length)}
     </svg>
+  )
+}
+
+/** The board silhouette shrunk to an inline glyph, used in fleet and placement lists. */
+export function ShipGlyph({ id, size, sunk = false }: { id: ShipId; size: number; sunk?: boolean }) {
+  return (
+    <ShipSvg
+      id={id}
+      size={size}
+      className={`ship-glyph ${sunk ? 'sunk' : ''}`}
+      style={{ width: `calc(var(--glyph-unit) * ${size})` }}
+    />
   )
 }
 
@@ -132,19 +150,9 @@ interface ShipSpriteProps {
 }
 
 export function ShipSprite({ id, cells, sunk = false, ghost }: ShipSpriteProps) {
-  const length = cells.length * CELL_UNITS
   const classes = ['ship-sprite']
   if (sunk) classes.push('sunk')
   if (ghost) classes.push(`ghost-${ghost}`)
 
-  return (
-    <svg
-      className={classes.join(' ')}
-      style={footprint(cells)}
-      viewBox={`0 0 ${length} ${CELL_UNITS}`}
-      aria-hidden="true"
-    >
-      {shipArt(id, length)}
-    </svg>
-  )
+  return <ShipSvg id={id} size={cells.length} className={classes.join(' ')} style={footprint(cells)} />
 }
