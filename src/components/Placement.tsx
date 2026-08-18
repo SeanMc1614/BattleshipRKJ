@@ -27,9 +27,7 @@ export function Placement({ playerName, onDone }: PlacementProps) {
 
   return (
     <section className="screen placement">
-      <h2>
-        {playerName}, place your fleet
-      </h2>
+      <h2 className="placement-heading">{playerName}, place your fleet</h2>
       <div className="placement-body">
         <Board
           fleet={fleet}

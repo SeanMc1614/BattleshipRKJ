@@ -168,8 +168,8 @@ button.big {
 }
 
 .cell {
-  width: clamp(22px, 3.4vw, 34px);
-  height: clamp(22px, 3.4vw, 34px);
+  width: clamp(22px, 7.2vw, 34px);
+  height: clamp(22px, 7.2vw, 34px);
   padding: 0;
   border-radius: 5px;
   font-size: 0.9rem;
@@ -268,7 +268,13 @@ button.big {
 
 /* Battle */
 .banner {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  width: 100%;
+  padding: 8px 0;
   text-align: center;
+  background: rgba(13, 59, 96, 0.94);
 }
 
 .banner.win h2 {
@@ -322,4 +328,29 @@ button.big {
 .handoff {
   gap: 20px;
   padding: 32px 0;
+}
+
+@media (max-width: 700px) {
+  .app {
+    padding: 8px 8px 32px;
+  }
+
+  .placement-heading {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    width: 100%;
+    padding: 8px 0;
+    background: rgba(13, 59, 96, 0.94);
+  }
+
+  .cell {
+    font-size: 1rem;
+  }
+
+  .panel,
+  .fleet-status {
+    min-width: 0;
+    width: 100%;
+  }
 }
