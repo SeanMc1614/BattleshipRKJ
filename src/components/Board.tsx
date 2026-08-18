@@ -1,5 +1,6 @@
-import { COLUMN_LABELS, coordKey, coordLabel, isSunk, shipAt, shotAt } from '../game/board'
-import { BOARD_SIZE, type Coord, type Fleet } from '../game/types'
+import { COLUMN_LABELS, coordKey, coordLabel, isSunk, shotAt } from '../game/board'
+import { BOARD_SIZE, type Coord, type Fleet, type ShipId } from '../game/types'
+import { ShipSprite } from './ShipSprite'
 
 interface BoardProps {
   fleet: Fleet
@@ -10,6 +11,7 @@ interface BoardProps {
   onCellHover?: (cell: Coord | null) => void
   preview?: Coord[]
   previewValid?: boolean
+  previewShip?: ShipId
   disabled?: boolean
 }
 
@@ -21,56 +23,71 @@ export function Board({
   onCellHover,
   preview = [],
   previewValid = true,
+  previewShip,
   disabled = false,
 }: BoardProps) {
   const previewKeys = new Set(preview.map(coordKey))
-  const sunkKeys = new Set(fleet.ships.filter(isSunk).flatMap((ship) => ship.cells.map(coordKey)))
 
   return (
     <div className="board">
       <div className="board-label">{label}</div>
       <div className="grid" onMouseLeave={() => onCellHover?.(null)}>
-        <div className="grid-row">
-          <div className="cell header" />
+        <div className="col-labels">
+          <span className="corner" />
           {COLUMN_LABELS.map((letter) => (
-            <div key={letter} className="cell header">
-              {letter}
-            </div>
+            <span key={letter}>{letter}</span>
           ))}
         </div>
-        {Array.from({ length: BOARD_SIZE }, (_, row) => (
-          <div key={row} className="grid-row">
-            <div className="cell header">{row + 1}</div>
-            {Array.from({ length: BOARD_SIZE }, (_, col) => {
-              const cell = { row, col }
-              const key = coordKey(cell)
-              const shot = shotAt(fleet, cell)
-              const hasShip = revealShips && shipAt(fleet.ships, cell) !== undefined
-              const sunk = sunkKeys.has(key)
-              const classes = ['cell', 'water']
-              if (hasShip) classes.push('ship')
-              if (shot?.result === 'miss') classes.push('miss')
-              if (shot && shot.result !== 'miss') classes.push(sunk ? 'sunk' : 'hit')
-              if (previewKeys.has(key)) classes.push(previewValid ? 'preview' : 'preview-bad')
-
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className={classes.join(' ')}
-                  disabled={disabled || shot !== undefined}
-                  aria-label={`${label} ${coordLabel(cell)}`}
-                  onClick={() => onCellClick?.(cell)}
-                  onMouseEnter={() => onCellHover?.(cell)}
-                  onFocus={() => onCellHover?.(cell)}
-                >
-                  {shot?.result === 'miss' ? '•' : null}
-                  {shot && shot.result !== 'miss' ? '✖' : null}
-                </button>
-              )
-            })}
+        <div className="grid-main">
+          <div className="row-labels">
+            {Array.from({ length: BOARD_SIZE }, (_, row) => (
+              <span key={row}>{row + 1}</span>
+            ))}
           </div>
-        ))}
+          <div className="play-area">
+            {Array.from({ length: BOARD_SIZE }, (_, row) => (
+              <div key={row} className="grid-row">
+                {Array.from({ length: BOARD_SIZE }, (_, col) => {
+                  const cell = { row, col }
+                  const key = coordKey(cell)
+                  const shot = shotAt(fleet, cell)
+                  const classes = ['cell']
+                  if (shot?.result === 'miss') classes.push('miss')
+                  if (shot && shot.result !== 'miss') classes.push('hit')
+                  if (previewKeys.has(key)) classes.push(previewValid ? 'preview' : 'preview-bad')
+                  const outcome = shot ? (shot.result === 'miss' ? ' — miss' : ' — hit') : ''
+
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className={classes.join(' ')}
+                      disabled={disabled || shot !== undefined}
+                      aria-label={`${label} ${coordLabel(cell)}${outcome}`}
+                      onClick={() => onCellClick?.(cell)}
+                      onMouseEnter={() => onCellHover?.(cell)}
+                      onFocus={() => onCellHover?.(cell)}
+                    />
+                  )
+                })}
+              </div>
+            ))}
+            <div className="ships-layer">
+              {revealShips
+                ? fleet.ships.map((ship) => (
+                    <ShipSprite key={ship.id} id={ship.id} cells={ship.cells} sunk={isSunk(ship)} />
+                  ))
+                : null}
+              {previewShip && preview.length > 0 ? (
+                <ShipSprite
+                  id={previewShip}
+                  cells={preview}
+                  ghost={previewValid ? 'valid' : 'invalid'}
+                />
+              ) : null}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
