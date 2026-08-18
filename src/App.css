@@ -1,10 +1,12 @@
 :root {
-  --ocean: #1b6ca8;
-  --ocean-dark: #0d3b60;
-  --ship: #4a5568;
-  --hit: #e64c3c;
-  --miss: #cfe8ff;
-  --sunk: #7b1f14;
+  --case-navy: #123a6b;
+  --case-navy-dark: #0b2444;
+  --case-navy-light: #1c5192;
+  --pegboard: #a5c4de;
+  --pegboard-line: #7ba0c2;
+  --hole: #16283f;
+  --peg-red: #e0362a;
+  --peg-white: #f4f2ea;
 }
 
 * {
@@ -14,8 +16,8 @@
 body {
   margin: 0;
   font-family: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
-  background: linear-gradient(180deg, #0d3b60, #14507f 60%, #1b6ca8);
-  color: #f4faff;
+  background: linear-gradient(180deg, #0a2040, #123a6b 55%, #0c2b52);
+  color: #eef5fc;
   min-height: 100vh;
 }
 
@@ -51,14 +53,15 @@ button {
   border: none;
   border-radius: 12px;
   padding: 10px 18px;
-  background: #ffffff22;
-  color: #f4faff;
+  background: var(--case-navy-light);
+  color: #eef5fc;
+  border: 2px solid #ffffff26;
   cursor: pointer;
   transition: transform 0.1s ease, background 0.15s ease;
 }
 
 button:hover:not(:disabled) {
-  background: #ffffff33;
+  background: #2461ad;
   transform: translateY(-1px);
 }
 
@@ -68,12 +71,13 @@ button:disabled {
 }
 
 button.primary {
-  background: #ffc857;
-  color: #23303f;
+  background: var(--peg-red);
+  border-color: #ffffff3a;
+  color: #fff;
 }
 
 button.primary:hover:not(:disabled) {
-  background: #ffd77a;
+  background: #f04a3c;
 }
 
 button.big {
@@ -108,7 +112,7 @@ button.big {
 }
 
 .mode-card.selected {
-  border-color: #ffc857;
+  border-color: var(--peg-red);
   background: #ffffff2e;
 }
 
@@ -158,75 +162,181 @@ button.big {
 }
 
 .grid {
-  display: flex;
+  --cell: clamp(24px, 7.2vw, 34px);
+  --gap: 2px;
+  display: inline-flex;
   flex-direction: column;
-  gap: 2px;
-  background: var(--ocean-dark);
-  padding: 6px;
+  gap: var(--gap);
+  padding: 8px 10px 10px;
   border-radius: 12px;
+  background: linear-gradient(180deg, var(--case-navy-light), var(--case-navy));
+  box-shadow: inset 0 1px 0 #ffffff30, 0 6px 14px rgba(0, 0, 0, 0.35);
 }
 
-.grid-row {
+.col-labels,
+.row-labels {
   display: flex;
-  gap: 2px;
+  gap: var(--gap);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #d7e7f7;
 }
 
-.cell {
-  width: clamp(22px, 7.2vw, 34px);
-  height: clamp(22px, 7.2vw, 34px);
-  padding: 0;
-  border-radius: 5px;
-  font-size: 0.9rem;
-  line-height: 1;
+.row-labels {
+  flex-direction: column;
+}
+
+.col-labels span,
+.row-labels span {
+  width: var(--cell);
+  height: var(--cell);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.cell.header {
+.col-labels .corner {
+  width: calc(var(--cell) * 0.7);
+}
+
+.row-labels span {
+  width: calc(var(--cell) * 0.7);
+}
+
+.grid-main {
+  display: flex;
+  gap: var(--gap);
+}
+
+/* Pegboard: holes and gridlines are painted underneath the ships, pegs sit on top. */
+.play-area {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: var(--gap);
+  border-radius: 4px;
+  background-color: var(--pegboard);
+  background-image: radial-gradient(circle at 50% 50%, var(--hole) 0 15%, transparent 16%),
+    repeating-linear-gradient(
+      90deg,
+      var(--pegboard-line) 0 var(--gap),
+      transparent var(--gap) calc(var(--cell) + var(--gap))
+    ),
+    repeating-linear-gradient(
+      0deg,
+      var(--pegboard-line) 0 var(--gap),
+      transparent var(--gap) calc(var(--cell) + var(--gap))
+    );
+  background-size: calc(var(--cell) + var(--gap)) calc(var(--cell) + var(--gap)), auto, auto;
+  background-position: calc(var(--gap) / 2) calc(var(--gap) / 2), 0 0, 0 0;
+}
+
+.grid-row {
+  display: flex;
+  gap: var(--gap);
+}
+
+.ships-layer {
+  position: absolute;
+  inset: var(--gap);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ship-sprite {
+  position: absolute;
+  overflow: visible;
+  filter: drop-shadow(2px 3px 2px rgba(0, 0, 0, 0.35));
+}
+
+.ship-hull {
+  fill: #b8bfc8;
+  stroke: #5c636d;
+  stroke-width: 4;
+}
+
+.ship-deck {
+  fill: #9aa2ac;
+}
+
+.ship-runway {
+  stroke: #eef3f8;
+  stroke-width: 5;
+  opacity: 0.75;
+}
+
+.ship-detail {
+  fill: #808892;
+}
+
+.ship-sprite.sunk .ship-hull {
+  fill: #8d3a31;
+  stroke: #4b1a15;
+}
+
+.ship-sprite.sunk .ship-deck,
+.ship-sprite.sunk .ship-detail {
+  fill: #6d2a23;
+}
+
+.ship-sprite.ghost-valid {
+  opacity: 0.6;
+}
+
+.ship-sprite.ghost-invalid {
+  opacity: 0.6;
+}
+
+.ship-sprite.ghost-invalid .ship-hull {
+  fill: #c8564a;
+  stroke: #7c241c;
+}
+
+.cell {
+  position: relative;
+  z-index: 1;
+  width: var(--cell);
+  height: var(--cell);
+  padding: 0;
+  border: none;
+  border-radius: 0;
   background: transparent;
-  font-size: 0.75rem;
-  opacity: 0.8;
-  cursor: default;
 }
 
-.cell.water {
-  background: var(--ocean);
-}
-
-.cell.water:hover:not(:disabled) {
-  background: #2b8fd6;
+.cell:hover:not(:disabled) {
+  background: #ffffff4d;
   transform: none;
 }
 
-.cell.ship {
-  background: var(--ship);
+.cell:not(:disabled) {
+  cursor: crosshair;
 }
 
-.cell.miss {
-  background: var(--miss);
-  color: #23303f;
-  opacity: 1;
+/* Pegs pushed into the board, like the plastic pieces. */
+.cell.hit::after,
+.cell.miss::after {
+  content: '';
+  position: absolute;
+  inset: 16%;
+  border-radius: 50%;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.45), inset 0 -2px 3px rgba(0, 0, 0, 0.3);
 }
 
-.cell.hit {
-  background: var(--hit);
-  color: #fff;
-  opacity: 1;
+.cell.hit::after {
+  background: radial-gradient(circle at 34% 28%, #ff9184, var(--peg-red) 68%);
 }
 
-.cell.sunk {
-  background: var(--sunk);
-  color: #fff;
-  opacity: 1;
+.cell.miss::after {
+  background: radial-gradient(circle at 34% 28%, #ffffff, #d7d4c8 78%);
 }
 
 .cell.preview {
-  background: #7ed957;
+  background: #7ed95766;
 }
 
 .cell.preview-bad {
-  background: #d95757;
+  background: #d9575766;
 }
 
 /* Placement */
@@ -267,7 +377,7 @@ button.big {
 
 .ship-list .current {
   font-weight: 800;
-  color: #ffc857;
+  color: #9fd0ff;
 }
 
 /* Battle */
@@ -278,11 +388,11 @@ button.big {
   width: 100%;
   padding: 8px 0;
   text-align: center;
-  background: rgba(13, 59, 96, 0.94);
+  background: rgba(11, 36, 68, 0.94);
 }
 
 .banner.win h2 {
-  color: #ffc857;
+  color: #ff8a7c;
 }
 
 .message {
@@ -345,11 +455,7 @@ button.big {
     z-index: 2;
     width: 100%;
     padding: 8px 0;
-    background: rgba(13, 59, 96, 0.94);
-  }
-
-  .cell {
-    font-size: 1rem;
+    background: rgba(11, 36, 68, 0.94);
   }
 
   .panel,

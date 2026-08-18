@@ -37,6 +37,7 @@ export function Placement({ playerName, onDone }: PlacementProps) {
           onCellHover={setHover}
           preview={preview}
           previewValid={previewValid}
+          previewShip={nextKind?.id}
           disabled={done}
         />
         <aside className="panel">
