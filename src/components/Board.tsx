@@ -1,5 +1,5 @@
-import { COLUMN_LABELS, coordKey, coordLabel, isSunk, shotAt } from '../game/board'
-import { BOARD_SIZE, type Coord, type Fleet, type ShipId } from '../game/types'
+import { BOARD_INDICES, COLUMN_LABELS, coordKey, coordLabel, isSunk, shotAt } from '../game/board'
+import { type Coord, type Fleet, type ShipId } from '../game/types'
 import { ShipSprite } from './ShipSprite'
 
 interface BoardProps {
@@ -40,14 +40,14 @@ export function Board({
         </div>
         <div className="grid-main">
           <div className="row-labels">
-            {Array.from({ length: BOARD_SIZE }, (_, row) => (
+            {BOARD_INDICES.map((row) => (
               <span key={row}>{row + 1}</span>
             ))}
           </div>
           <div className="play-area">
-            {Array.from({ length: BOARD_SIZE }, (_, row) => (
+            {BOARD_INDICES.map((row) => (
               <div key={row} className="grid-row">
-                {Array.from({ length: BOARD_SIZE }, (_, col) => {
+                {BOARD_INDICES.map((col) => {
                   const cell = { row, col }
                   const key = coordKey(cell)
                   const shot = shotAt(fleet, cell)

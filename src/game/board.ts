@@ -10,10 +10,21 @@ import {
   type ShotResult,
 } from './types'
 
-export const COLUMN_LABELS = Array.from({ length: BOARD_SIZE }, (_, i) => String.fromCharCode(65 + i))
+/** 0…BOARD_SIZE-1, for iterating rows and columns. */
+export const BOARD_INDICES = Array.from({ length: BOARD_SIZE }, (_, i) => i)
+
+export const COLUMN_LABELS = BOARD_INDICES.map((i) => String.fromCharCode(65 + i))
 
 export function coordKey({ row, col }: Coord): string {
   return `${row},${col}`
+}
+
+export function sameCoord(a: Coord, b: Coord): boolean {
+  return a.row === b.row && a.col === b.col
+}
+
+export function allCoords(): Coord[] {
+  return BOARD_INDICES.flatMap((row) => BOARD_INDICES.map((col) => ({ row, col })))
 }
 
 export function coordLabel({ row, col }: Coord): string {
@@ -28,13 +39,18 @@ export function shipCells(kind: ShipKind, start: Coord, orientation: Orientation
   )
 }
 
-function inBounds({ row, col }: Coord): boolean {
+export function inBounds({ row, col }: Coord): boolean {
   return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE
+}
+
+/** Keys of every cell occupied by `ships`, for O(1) lookups. */
+export function cellKeys(ships: Ship[]): Set<string> {
+  return new Set(ships.flatMap((ship) => ship.cells.map(coordKey)))
 }
 
 export function canPlace(ships: Ship[], cells: Coord[]): boolean {
   if (!cells.every(inBounds)) return false
-  const taken = new Set(ships.flatMap((ship) => ship.cells.map(coordKey)))
+  const taken = cellKeys(ships)
   return cells.every((cell) => !taken.has(coordKey(cell)))
 }
 
@@ -44,8 +60,9 @@ export function placeShip(ships: Ship[], kind: ShipKind, start: Coord, orientati
   return [...ships, { id: kind.id, name: kind.name, cells, hits: 0 }]
 }
 
-export function emptyFleet(): Fleet {
-  return { ships: [], incoming: [] }
+/** A fresh fleet: ships in place, no shots taken yet. */
+export function newFleet(ships: Ship[] = []): Fleet {
+  return { ships, incoming: [] }
 }
 
 export function randomFleet(random: () => number = Math.random): Fleet {
@@ -62,11 +79,11 @@ export function randomFleet(random: () => number = Math.random): Fleet {
     }
     ships = placed
   }
-  return { ships, incoming: [] }
+  return newFleet(ships)
 }
 
 export function shipAt(ships: Ship[], cell: Coord): Ship | undefined {
-  return ships.find((ship) => ship.cells.some((c) => c.row === cell.row && c.col === cell.col))
+  return ships.find((ship) => ship.cells.some((c) => sameCoord(c, cell)))
 }
 
 export function isSunk(ship: Ship): boolean {
@@ -74,7 +91,7 @@ export function isSunk(ship: Ship): boolean {
 }
 
 export function alreadyFired(fleet: Fleet, cell: Coord): boolean {
-  return fleet.incoming.some((shot) => shot.row === cell.row && shot.col === cell.col)
+  return shotAt(fleet, cell) !== undefined
 }
 
 export interface FireOutcome {
@@ -103,7 +120,7 @@ export function fireAt(fleet: Fleet, cell: Coord): FireOutcome {
 }
 
 export function shotAt(fleet: Fleet, cell: Coord): Shot | undefined {
-  return fleet.incoming.find((shot) => shot.row === cell.row && shot.col === cell.col)
+  return fleet.incoming.find((shot) => sameCoord(shot, cell))
 }
 
 export function remainingShips(fleet: Fleet): Ship[] {

@@ -1,13 +1,5 @@
-import { alreadyFired, coordKey, isSunk } from './board'
-import { BOARD_SIZE, type Coord, type Difficulty, type Fleet } from './types'
-
-function allCells(): Coord[] {
-  const cells: Coord[] = []
-  for (let row = 0; row < BOARD_SIZE; row += 1) {
-    for (let col = 0; col < BOARD_SIZE; col += 1) cells.push({ row, col })
-  }
-  return cells
-}
+import { allCoords, alreadyFired, cellKeys, coordKey, inBounds, isSunk } from './board'
+import { type Coord, type Difficulty, type Fleet } from './types'
 
 function pick(cells: Coord[], random: () => number): Coord {
   return cells[Math.floor(random() * cells.length)]
@@ -15,9 +7,7 @@ function pick(cells: Coord[], random: () => number): Coord {
 
 /** Hits that belong to ships still afloat, i.e. leads worth following up. */
 function openHits(fleet: Fleet): Coord[] {
-  const sunkCells = new Set(
-    fleet.ships.filter(isSunk).flatMap((ship) => ship.cells.map(coordKey)),
-  )
+  const sunkCells = cellKeys(fleet.ships.filter(isSunk))
   return fleet.incoming
     .filter((shot) => shot.result === 'hit' && !sunkCells.has(coordKey(shot)))
     .map(({ row, col }) => ({ row, col }))
@@ -29,7 +19,7 @@ function neighbours({ row, col }: Coord): Coord[] {
     { row: row + 1, col },
     { row, col: col - 1 },
     { row, col: col + 1 },
-  ].filter((c) => c.row >= 0 && c.row < BOARD_SIZE && c.col >= 0 && c.col < BOARD_SIZE)
+  ].filter(inBounds)
 }
 
 /**
@@ -37,7 +27,7 @@ function neighbours({ row, col }: Coord): Coord[] {
  * Easy fires at random; normal hunts on a checkerboard and finishes off wounded ships.
  */
 export function chooseAiShot(fleet: Fleet, difficulty: Difficulty, random: () => number = Math.random): Coord {
-  const untried = allCells().filter((cell) => !alreadyFired(fleet, cell))
+  const untried = allCoords().filter((cell) => !alreadyFired(fleet, cell))
 
   if (difficulty === 'normal') {
     const leads = openHits(fleet)

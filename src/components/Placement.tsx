@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Board } from './Board'
-import { canPlace, placeShip, randomFleet, shipCells } from '../game/board'
-import { ShipGlyph } from './ShipSprite'
+import { canPlace, newFleet, placeShip, randomFleet, shipCells } from '../game/board'
+import { ShipRow } from './ShipRow'
 import { SHIP_KINDS, type Coord, type Fleet, type Orientation, type Ship } from '../game/types'
 
 interface PlacementProps {
@@ -16,7 +16,7 @@ export function Placement({ playerName, onDone }: PlacementProps) {
 
   const nextKind = SHIP_KINDS[ships.length]
   const done = nextKind === undefined
-  const fleet: Fleet = { ships, incoming: [] }
+  const fleet: Fleet = newFleet(ships)
   const preview = nextKind && hover ? shipCells(nextKind, hover, orientation) : []
   const previewValid = preview.length > 0 && canPlace(ships, preview)
 
@@ -49,14 +49,14 @@ export function Placement({ playerName, onDone }: PlacementProps) {
           </p>
           <ol className="ship-list">
             {SHIP_KINDS.map((kind, index) => (
-              <li
+              <ShipRow
                 key={kind.id}
+                id={kind.id}
+                size={kind.size}
+                name={kind.name}
+                tally={String(kind.size)}
                 className={index < ships.length ? 'placed' : index === ships.length ? 'current' : ''}
-              >
-                <ShipGlyph id={kind.id} size={kind.size} />
-                <span className="ship-name">{kind.name}</span>
-                <span className="ship-tally">{kind.size}</span>
-              </li>
+              />
             ))}
           </ol>
           <div className="controls">

@@ -47,6 +47,40 @@ function audio(): AudioContext | null {
   return context
 }
 
+/** Exponential ramps can't touch zero, so silence is approximated by a tiny value. */
+const SILENT = 0.0001
+
+function sweep(param: AudioParam, from: number, to: number, start: number, seconds: number): void {
+  param.setValueAtTime(from, start)
+  param.exponentialRampToValueAtTime(to, start + seconds)
+}
+
+/**
+ * Gain node that fades from silence up to `peak` over `attack` seconds and back
+ * down by `seconds`. With no attack it starts at full volume, as a percussive hit does.
+ */
+function envelope(
+  ctx: AudioContext,
+  start: number,
+  { peak, seconds, attack = 0 }: { peak: number; seconds: number; attack?: number },
+): GainNode {
+  const gain = ctx.createGain()
+  if (attack > 0) {
+    sweep(gain.gain, SILENT, peak, start, attack)
+    sweep(gain.gain, peak, SILENT, start + attack, seconds - attack)
+  } else {
+    sweep(gain.gain, peak, SILENT, start, seconds)
+  }
+  return gain
+}
+
+function tone(ctx: AudioContext, from: number, to: number, start: number, seconds: number): OscillatorNode {
+  const osc = ctx.createOscillator()
+  osc.type = 'sine'
+  sweep(osc.frequency, from, to, start, seconds)
+  return osc
+}
+
 function noise(ctx: AudioContext, seconds: number): AudioBufferSourceNode {
   const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * seconds), ctx.sampleRate)
   const data = buffer.getChannelData(0)
@@ -63,17 +97,8 @@ export function playWhistle(): void {
   const now = ctx.currentTime
   const seconds = WHISTLE_MS / 1000
 
-  const osc = ctx.createOscillator()
-  osc.type = 'sine'
-  osc.frequency.setValueAtTime(1500, now)
-  osc.frequency.exponentialRampToValueAtTime(320, now + seconds)
-
-  const gain = ctx.createGain()
-  gain.gain.setValueAtTime(0.0001, now)
-  gain.gain.exponentialRampToValueAtTime(0.16, now + 0.12)
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + seconds)
-
-  osc.connect(gain).connect(ctx.destination)
+  const osc = tone(ctx, 1500, 320, now, seconds)
+  osc.connect(envelope(ctx, now, { peak: 0.16, seconds, attack: 0.12 })).connect(ctx.destination)
   osc.start(now)
   osc.stop(now + seconds)
 }
@@ -87,23 +112,15 @@ export function playExplosion(): void {
   const blast = noise(ctx, 0.9)
   const filter = ctx.createBiquadFilter()
   filter.type = 'lowpass'
-  filter.frequency.setValueAtTime(1800, now)
-  filter.frequency.exponentialRampToValueAtTime(180, now + 0.9)
-
-  const blastGain = ctx.createGain()
-  blastGain.gain.setValueAtTime(0.5, now)
-  blastGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.9)
-  blast.connect(filter).connect(blastGain).connect(ctx.destination)
+  sweep(filter.frequency, 1800, 180, now, 0.9)
+  blast
+    .connect(filter)
+    .connect(envelope(ctx, now, { peak: 0.5, seconds: 0.9 }))
+    .connect(ctx.destination)
   blast.start(now)
 
-  const thump = ctx.createOscillator()
-  thump.type = 'sine'
-  thump.frequency.setValueAtTime(120, now)
-  thump.frequency.exponentialRampToValueAtTime(38, now + 0.5)
-  const thumpGain = ctx.createGain()
-  thumpGain.gain.setValueAtTime(0.6, now)
-  thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5)
-  thump.connect(thumpGain).connect(ctx.destination)
+  const thump = tone(ctx, 120, 38, now, 0.5)
+  thump.connect(envelope(ctx, now, { peak: 0.6, seconds: 0.5 })).connect(ctx.destination)
   thump.start(now)
   thump.stop(now + 0.5)
 }
@@ -118,15 +135,12 @@ export function playSplash(): void {
   const band = ctx.createBiquadFilter()
   band.type = 'bandpass'
   band.Q.value = 0.9
-  band.frequency.setValueAtTime(2400, now)
-  band.frequency.exponentialRampToValueAtTime(500, now + 0.45)
+  sweep(band.frequency, 2400, 500, now, 0.45)
 
-  const gain = ctx.createGain()
-  gain.gain.setValueAtTime(0.0001, now)
-  gain.gain.exponentialRampToValueAtTime(0.35, now + 0.04)
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5)
-
-  source.connect(band).connect(gain).connect(ctx.destination)
+  source
+    .connect(band)
+    .connect(envelope(ctx, now, { peak: 0.35, seconds: 0.5, attack: 0.04 }))
+    .connect(ctx.destination)
   source.start(now)
 }
 

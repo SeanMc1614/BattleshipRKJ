@@ -1,9 +1,45 @@
 import { describe, expect, it } from 'vitest'
-import { canPlace, fireAt, isSunk, placeShip, randomFleet, shipCells } from './board'
+import {
+  allCoords,
+  canPlace,
+  cellKeys,
+  fireAt,
+  inBounds,
+  isSunk,
+  placeShip,
+  randomFleet,
+  sameCoord,
+  shipCells,
+} from './board'
 import { BOARD_SIZE, SHIP_KINDS, type Ship } from './types'
 
 const destroyer = SHIP_KINDS.find((kind) => kind.id === 'destroyer')!
 const carrier = SHIP_KINDS.find((kind) => kind.id === 'carrier')!
+
+describe('coordinate helpers', () => {
+  it('compares coordinates by value', () => {
+    expect(sameCoord({ row: 2, col: 3 }, { row: 2, col: 3 })).toBe(true)
+    expect(sameCoord({ row: 2, col: 3 }, { row: 3, col: 2 })).toBe(false)
+  })
+
+  it('knows what is on the board', () => {
+    expect(inBounds({ row: 0, col: 0 })).toBe(true)
+    expect(inBounds({ row: BOARD_SIZE - 1, col: BOARD_SIZE - 1 })).toBe(true)
+    expect(inBounds({ row: -1, col: 0 })).toBe(false)
+    expect(inBounds({ row: 0, col: BOARD_SIZE })).toBe(false)
+  })
+
+  it('lists every square once', () => {
+    const cells = allCoords()
+    expect(cells).toHaveLength(BOARD_SIZE * BOARD_SIZE)
+    expect(new Set(cells.map((cell) => `${cell.row},${cell.col}`)).size).toBe(cells.length)
+  })
+
+  it('keys the squares a fleet occupies', () => {
+    const ships = placeShip([], destroyer, { row: 1, col: 1 }, 'horizontal')!
+    expect(cellKeys(ships)).toEqual(new Set(['1,1', '1,2']))
+  })
+})
 
 describe('placement', () => {
   it('rejects ships that run off the board', () => {
