@@ -27,11 +27,24 @@ body {
   padding: 16px 16px 48px;
 }
 
+.header {
+  position: relative;
+}
+
 .header h1 {
   text-align: center;
   font-size: clamp(2rem, 6vw, 3rem);
   margin: 8px 0 16px;
   text-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.sound-toggle {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  padding: 8px 12px;
+  font-size: 1.3rem;
+  line-height: 1;
 }
 
 .screen {
